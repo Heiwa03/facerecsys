@@ -1,7 +1,7 @@
 import sys
 from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QPushButton, QLabel, QFileDialog, QComboBox, QHBoxLayout
 from PyQt5.QtGui import QIcon
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QPropertyAnimation, QRect
 from recognition import Recognition
 
 # Constants for styles
@@ -59,6 +59,9 @@ class FaceRecognitionApp(QWidget):
 
         self.setLayout(self.layout)
 
+        # Add fade-in animation for the video label
+        self.fade_in_animation(self.video_label)
+
     def init_video_label(self):
         """Initialize the video label for displaying video feed or uploaded image."""
         self.video_label = QLabel(self)
@@ -68,7 +71,6 @@ class FaceRecognitionApp(QWidget):
     def init_camera_combo_box(self):
         """Initialize the camera selection combo box."""
         self.camera_combo_box = QComboBox(self)
-        self.camera_combo_box.currentIndexChanged.connect(self.start_recognition)
         self.layout.addWidget(self.camera_combo_box)
 
     def init_buttons(self):
@@ -78,13 +80,13 @@ class FaceRecognitionApp(QWidget):
         self.start_button = QPushButton("Start Recognition", self)
         self.start_button.setIcon(QIcon("icons/start.png"))
         self.start_button.clicked.connect(self.start_recognition)
-        self.start_button.setVisible(False)  # Hide the button, as capture is already started
+        self.start_button.setVisible(True)  # Show the start button initially
         button_layout.addWidget(self.start_button)
 
         self.stop_button = QPushButton("Stop Recognition", self)
         self.stop_button.setIcon(QIcon("icons/stop.png"))
         self.stop_button.clicked.connect(self.stop_recognition)
-        self.stop_button.setVisible(True)
+        self.stop_button.setVisible(False)  # Hide the stop button initially
         button_layout.addWidget(self.stop_button)
 
         self.upload_button = QPushButton("Upload Photo", self)
@@ -93,6 +95,11 @@ class FaceRecognitionApp(QWidget):
         button_layout.addWidget(self.upload_button)
 
         self.layout.addLayout(button_layout)
+
+        # Add hover animation for buttons
+        self.add_hover_animation(self.start_button)
+        self.add_hover_animation(self.stop_button)
+        self.add_hover_animation(self.upload_button)
 
     def update_camera_list(self):
         """Update the camera list in the combo box."""
@@ -125,6 +132,38 @@ class FaceRecognitionApp(QWidget):
         if file_path:
             # Display the uploaded photo with face landmarks
             self.recognition.process_uploaded_photo(file_path, self.video_label)
+
+    def fade_in_animation(self, widget):
+        """Add a fade-in animation to the specified widget."""
+        animation = QPropertyAnimation(widget, b"geometry")
+        animation.setDuration(5000)
+        animation.setStartValue(QRect(widget.x(), widget.y(), widget.width(), 0))
+        animation.setEndValue(QRect(widget.x(), widget.y(), widget.width(), widget.height()))
+        animation.start()
+
+    def add_hover_animation(self, button):
+        """Add a hover animation to the specified button."""
+        button.installEventFilter(self)
+
+    def eventFilter(self, source, event):
+        """Event filter to handle hover animations."""
+        if event.type() == event.Enter and isinstance(source, QPushButton):
+            self.animate_button(source, 1.1)
+        elif event.type() == event.Leave and isinstance(source, QPushButton):
+            self.animate_button(source, 1.0)
+        return super().eventFilter(source, event)
+
+    def animate_button(self, button, scale_factor):
+        """Animate the button size."""
+        animation = QPropertyAnimation(button, b"geometry")
+        animation.setDuration(200)
+        rect = button.geometry()
+        new_width = int(rect.width() * scale_factor)
+        new_height = int(rect.height() * scale_factor)
+        new_rect = QRect(rect.x(), rect.y(), new_width, new_height)
+        animation.setStartValue(rect)
+        animation.setEndValue(new_rect)
+        animation.start()
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)

@@ -3,6 +3,7 @@ import mediapipe as mp
 from PyQt5.QtGui import QImage, QPixmap
 from PyQt5.QtCore import QTimer
 import subprocess
+import platform
 
 mp_face_mesh = mp.solutions.face_mesh
 
@@ -17,6 +18,27 @@ class Recognition:
         return self.cap is not None
 
     def list_available_cameras(self):
+        if platform.system() == "Windows":
+            return self.list_available_cameras_windows()
+        elif platform.system() == "Linux":
+            return self.list_available_cameras_linux()
+        else:
+            return []
+
+    def list_available_cameras_windows(self):
+        index = 0
+        camera_indices = []
+        while True:
+            cap = cv2.VideoCapture(index)
+            if not cap.read()[0]:
+                break
+            else:
+                camera_indices.append(index)
+            cap.release()
+            index += 1
+        return camera_indices
+
+    def list_available_cameras_linux(self):
         try:
             output = subprocess.check_output("v4l2-ctl --list-devices", shell=True).decode()
             devices = output.split("\n\n")
