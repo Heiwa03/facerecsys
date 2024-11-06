@@ -5,6 +5,9 @@ from PyQt5.QtCore import QTimer
 import subprocess
 import platform
 
+if platform.system() == "Darwin":
+    import AVFoundation
+
 mp_face_mesh = mp.solutions.face_mesh
 mp_drawing = mp.solutions.drawing_utils
 mp_drawing_styles = mp.solutions.drawing_styles
@@ -26,6 +29,8 @@ class Recognition:
             return self.list_available_cameras_windows()
         elif platform.system() == "Linux":
             return self.list_available_cameras_linux()
+        elif platform.system() == "Darwin":
+            return self.list_available_cameras_macos()
         else:
             return []
 
@@ -58,6 +63,11 @@ class Recognition:
         except subprocess.CalledProcessError:
             return []
 
+    def list_available_cameras_macos(self):
+        devices = AVFoundation.AVCaptureDevice.devicesWithMediaType_(AVFoundation.AVMediaTypeVideo)
+        camera_indices = [i for i, _ in enumerate(devices)]
+        return camera_indices
+    
     def start_face_recognition(self, video_label, camera_index, use_alt=False):
         self.cap = cv2.VideoCapture(camera_index)
         self.use_alt = use_alt
