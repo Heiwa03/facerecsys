@@ -82,7 +82,7 @@ class Recognition:
         ret, frame = self.cap.read()
         if not ret:
             return
-
+        frame = cv2.resize(frame, (640, 480))
         frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         h, w, _ = frame_rgb.shape
         results = self.face_mesh_live.process(frame_rgb)
@@ -104,7 +104,7 @@ class Recognition:
         ret, image = self.cap.read()
         if not ret:
             return
-        
+        frame = cv2.resize(frame, (640, 480))
         image.flags.writeable = False
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         results = self.face_mesh_alt.process(image)
