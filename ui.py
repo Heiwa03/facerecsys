@@ -9,8 +9,13 @@ MODERN_STYLE = """
     QWidget {
         background-color: #2E2E2E;
         color: #FFFFFF;
+        font-family: Cascadia Code;
+        font-size: 14px;
     }
     QLabel {
+        border: 2px solid green;
+        border-radius: 4px;
+        padding: 2px;
         font-size: 18px;
         color: #FFFFFF;
     }
