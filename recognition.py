@@ -6,13 +6,17 @@ import subprocess
 import platform
 
 mp_face_mesh = mp.solutions.face_mesh
+mp_drawing = mp.solutions.drawing_utils
+mp_drawing_styles = mp.solutions.drawing_styles
 
 class Recognition:
     def __init__(self):
         self.face_mesh_live = mp_face_mesh.FaceMesh(static_image_mode=False, max_num_faces=5)  
         self.face_mesh_static = mp_face_mesh.FaceMesh(static_image_mode=True, max_num_faces=5)  
+        self.face_mesh_alt = mp_face_mesh.FaceMesh(max_num_faces=1, refine_landmarks=True, min_detection_confidence=0.5, min_tracking_confidence=0.5)
         self.cap = None
         self.timer = None
+        self.use_alt = False
 
     def is_running(self):
         return self.cap is not None
@@ -54,10 +58,14 @@ class Recognition:
         except subprocess.CalledProcessError:
             return []
 
-    def start_face_recognition(self, video_label, camera_index):
+    def start_face_recognition(self, video_label, camera_index, use_alt=False):
         self.cap = cv2.VideoCapture(camera_index)
+        self.use_alt = use_alt
         self.timer = QTimer()
-        self.timer.timeout.connect(lambda: self.update_frame(video_label))
+        if use_alt:
+            self.timer.timeout.connect(lambda: self.alt_update_frame(video_label))
+        else:
+            self.timer.timeout.connect(lambda: self.update_frame(video_label))
         self.timer.start(30)
 
     def update_frame(self, video_label):
@@ -76,6 +84,46 @@ class Recognition:
                     y = int(landmark.y * h)
                     cv2.circle(frame, (x, y), 1, (0, 255, 0), -1)
 
+        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        h, w, ch = frame.shape
+        bytes_per_line = ch * w
+        q_image = QImage(frame.data, w, h, bytes_per_line, QImage.Format_RGB888)
+        video_label.setPixmap(QPixmap.fromImage(q_image))
+
+    def alt_update_frame(self, video_label):
+        ret, image = self.cap.read()
+        if not ret:
+            return
+        
+        image.flags.writeable = False
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        results = self.face_mesh_alt.process(image)
+
+        # Draw the face mesh annotations on the image.
+        image.flags.writeable = True
+        image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+        if results.multi_face_landmarks:
+            for face_landmarks in results.multi_face_landmarks:
+                mp_drawing.draw_landmarks(
+                    image=image,
+                    landmark_list=face_landmarks,
+                    connections=mp_face_mesh.FACEMESH_TESSELATION,
+                    landmark_drawing_spec=None,
+                    connection_drawing_spec=mp_drawing_styles.get_default_face_mesh_tesselation_style())
+                mp_drawing.draw_landmarks(
+                    image=image,
+                    landmark_list=face_landmarks,
+                    connections=mp_face_mesh.FACEMESH_CONTOURS,
+                    landmark_drawing_spec=None,
+                    connection_drawing_spec=mp_drawing_styles.get_default_face_mesh_contours_style())
+                mp_drawing.draw_landmarks(
+                    image=image,
+                    landmark_list=face_landmarks,
+                    connections=mp_face_mesh.FACEMESH_IRISES,
+                    landmark_drawing_spec=None,
+                    connection_drawing_spec=mp_drawing_styles.get_default_face_mesh_iris_connections_style())
+        # Flip the image horizontally for a selfie-view display.
+        frame = image
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         h, w, ch = frame.shape
         bytes_per_line = ch * w

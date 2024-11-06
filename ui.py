@@ -88,6 +88,12 @@ class FaceRecognitionApp(QWidget):
         self.start_button.setVisible(True)  # Show the start button initially
         button_layout.addWidget(self.start_button)
 
+        self.alt_start_button = QPushButton("Start Alt Recognition", self)
+        self.alt_start_button.setIcon(QIcon("icons/start.png"))
+        self.alt_start_button.clicked.connect(self.start_alt_recognition)
+        self.alt_start_button.setVisible(True)  # Show the alt start button initially
+        button_layout.addWidget(self.alt_start_button)
+
         self.stop_button = QPushButton("Stop Recognition", self)
         self.stop_button.setIcon(QIcon("icons/stop.png"))
         self.stop_button.clicked.connect(self.stop_recognition)
@@ -103,6 +109,7 @@ class FaceRecognitionApp(QWidget):
 
         # Add hover animation for buttons
         self.add_hover_animation(self.start_button)
+        self.add_hover_animation(self.alt_start_button)
         self.add_hover_animation(self.stop_button)
         self.add_hover_animation(self.upload_button)
 
@@ -116,14 +123,24 @@ class FaceRecognitionApp(QWidget):
     def start_recognition(self):
         """Start the face recognition process."""
         self.start_button.setVisible(False)
+        self.alt_start_button.setVisible(False)
         self.stop_button.setVisible(True)
         selected_camera_index = self.camera_combo_box.currentData()
         self.recognition.start_face_recognition(self.video_label, selected_camera_index)
+
+    def start_alt_recognition(self):
+        """Start the alternative face recognition process."""
+        self.start_button.setVisible(False)
+        self.alt_start_button.setVisible(False)
+        self.stop_button.setVisible(True)
+        selected_camera_index = self.camera_combo_box.currentData()
+        self.recognition.start_face_recognition(self.video_label, selected_camera_index, use_alt=True)
 
     def stop_recognition(self):
         """Stop the face recognition process."""
         self.stop_button.setVisible(False)
         self.start_button.setVisible(True)
+        self.alt_start_button.setVisible(True)
         self.recognition.stop_recognition()
 
     def upload_photo(self):
@@ -141,7 +158,7 @@ class FaceRecognitionApp(QWidget):
     def fade_in_animation(self, widget):
         """Add a fade-in animation to the specified widget."""
         animation = QPropertyAnimation(widget, b"geometry")
-        animation.setDuration(5000)
+        animation.setDuration(1000)
         animation.setStartValue(QRect(widget.x(), widget.y(), widget.width(), 0))
         animation.setEndValue(QRect(widget.x(), widget.y(), widget.width(), widget.height()))
         animation.start()
